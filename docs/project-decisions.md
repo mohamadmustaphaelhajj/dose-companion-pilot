@@ -1,5 +1,9 @@
 # Project decisions
 
+## Active priority and repository split — November 26, 2026
+
+The owner requested two public repositories, with the personal pilot taking priority until complete. This checkout's `origin` is `mohamadmustaphaelhajj/dose-companion-pilot`; the existing public-product repository is retained as remote `public`. The pilot starts from validated commit `b9d89da`. Public-product development and paid hosting are deferred. Ask before each new commit; do not automatically publish pilot changes to the public-product repository. See [workstreams](workstreams.md).
+
 ## Intended experience
 
 The first user has an Android phone and a Windows laptop. The Android app provides local offline reminders and camera assistance; a later installable web app provides the Windows companion. People configure their own medication and daily times. Start with a free deployment within service quotas and evaluate costs before expanding distribution.

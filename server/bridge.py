@@ -172,6 +172,23 @@ def call_openai(images, settings):
         raise BridgeError(502, 'invalid_model_result')
 
 
+def extract(raw, settings, state, request_id=None):
+    images = validate_upload(parse_json(raw))
+    state.last_request = time.monotonic()
+    if request_id is not None:
+        if not re.fullmatch(r'[a-f0-9]{32}', request_id):
+            raise BridgeError(400, 'invalid_request_id')
+        now = time.monotonic()
+        state.receipts = OrderedDict((key, when) for key, when in state.receipts.items() if now - when < 600)
+        if request_id in state.receipts:
+            raise BridgeError(409, 'duplicate_submission')
+        state.receipts[request_id] = now
+        while len(state.receipts) > 512:
+            state.receipts.popitem(last=False)
+    result = call_openai(images, settings)
+    return result
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass  # Never print request paths, headers, images, IPs, prompts or model text.
@@ -230,20 +247,7 @@ class Handler(BaseHTTPRequestHandler):
             raw = self.rfile.read(length)
             if len(raw) != length:
                 raise BridgeError(400, 'invalid_request')
-            images = validate_upload(parse_json(raw))
-            self.server.last_request = time.monotonic()
-            request_id = self.headers.get('X-Scan-Request-Id')
-            if request_id is not None:
-                if not re.fullmatch(r'[a-f0-9]{32}', request_id):
-                    raise BridgeError(400, 'invalid_request_id')
-                now = time.monotonic()
-                self.server.receipts = OrderedDict((key, when) for key, when in self.server.receipts.items() if now - when < 600)
-                if request_id in self.server.receipts:
-                    raise BridgeError(409, 'duplicate_submission')
-                self.server.receipts[request_id] = now
-                while len(self.server.receipts) > 512:
-                    self.server.receipts.popitem(last=False)
-            result = call_openai(images, settings)
+            result = extract(raw, settings, self.server, self.headers.get('X-Scan-Request-Id'))
             self.respond(200, result)
         except BridgeError as failure:
             self.respond(failure.status, {'error': failure.code})

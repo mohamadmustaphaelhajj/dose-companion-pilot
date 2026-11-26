@@ -31,7 +31,10 @@ final class CloudReader implements AutoCloseable {
                 throw new IOException("Use HTTPS, or the localhost USB development bridge.");
         } catch (URISyntaxException | RuntimeException invalid) { throw new IOException("Enter a valid server address."); }
     }
-    JsonObject settings() throws IOException { return JsonParser.parseString(request("/v1/config", null)).getAsJsonObject(); }
+    JsonObject settings() throws IOException {
+        try { return JsonParser.parseString(request("/v1/config", null)).getAsJsonObject(); }
+        catch (RuntimeException invalid) { throw new IOException("The reader did not return valid settings. If the hosted service is starting, wait briefly and check the connection again. No photos were sent."); }
+    }
     LabelDraft read(List<byte[]> images) throws IOException {
         if (images.size() < 2 || images.size() > 4) throw new IOException("Choose two to four photos.");
         JsonObject body = new JsonObject(); body.addProperty("consent", true); JsonArray encoded = new JsonArray();
@@ -55,7 +58,7 @@ final class CloudReader implements AutoCloseable {
             if (cancelled) throw new IOException("Cancelled.");
             if (body != null) connection.setRequestProperty("X-Scan-Request-Id", UUID.randomUUID().toString().replace("-", ""));
             connection.setInstanceFollowRedirects(false); connection.setUseCaches(false);
-            connection.setConnectTimeout(12000); connection.setReadTimeout(170000);
+            connection.setConnectTimeout(12000); connection.setReadTimeout(body == null ? 90000 : 170000);
             connection.setRequestProperty("Authorization", "Bearer " + token); connection.setRequestProperty("Accept", "application/json");
             if (body != null) {
                 connection.setRequestMethod("POST"); connection.setDoOutput(true); connection.setRequestProperty("Content-Type", "application/json");
@@ -83,21 +86,21 @@ final class CloudReader implements AutoCloseable {
             }
             if (cancelled) throw new IOException("Cancelled."); return output.toString(StandardCharsets.UTF_8.name());
         } catch (SocketTimeoutException timeout) {
-            throw new IOException(body == null ? "Connection check timed out. Check the Mac backend and USB connection."
+            throw new IOException(body == null ? "Connection check timed out. The hosted reader may still be starting. Check internet access and the server address, then check again. For USB development, check the Mac and cable."
                 : "Reading timed out. Your photos are kept. The provider may have processed this request; no retry was sent. Check the connection before explicitly trying again.");
         } catch (javax.net.ssl.SSLException tls) {
             throw new IOException("Secure connection failed. Check the backend HTTPS certificate; do not switch a public server to HTTP.");
         } catch (ConnectException | UnknownHostException unavailable) {
-            throw new IOException("Cannot reach the backend. Keep the Mac awake and server running; reconnect USB and run server/pair_android.py, then Check cloud connection.");
+            throw new IOException("Cannot reach the reader. Check internet access and the hosted server address. For USB development, keep the Mac awake, reconnect USB and run server/pair_android.py. Then check the connection again.");
         } catch (SocketException interrupted) {
-            throw new IOException(body == null ? "Connection check was interrupted. Reconnect USB and check that the Mac backend is running."
-                : "The connection was interrupted. Your photos are kept. The request may have reached the provider; no automatic retry was sent. Reconnect USB and check the backend before explicitly trying again.");
+            throw new IOException(body == null ? "Connection check was interrupted. Check internet access and server availability; for USB development, reconnect the cable."
+                : "The connection was interrupted. Your photos are kept. The request may have reached the provider; no automatic retry was sent. Check internet access and server availability before explicitly trying again.");
         } finally { connection.disconnect(); if (active == connection) active = null; }
     }
     static String errorMessage(int status, String code) {
         switch (code) {
             case "provider_quota_exhausted": return "OpenAI API credits are exhausted. Add credits to the API organization, allow the balance to update, then explicitly retry. Your photos are kept.";
-            case "provider_auth_failed": return "The server’s OpenAI API key was rejected. Update it on the Mac with server/configure.py. Your photos are kept.";
+            case "provider_auth_failed": return "The server’s OpenAI API key was rejected. Ask the pilot administrator to update its server configuration. Your photos are kept.";
             case "provider_access_denied": case "provider_model_unavailable": return "The API project cannot access the configured model. Check model access and OPENAI_MODEL on the server. Your photos are kept.";
             case "provider_rate_limited": return "OpenAI is temporarily rate limiting requests. Wait before explicitly retrying. No automatic retry was sent.";
             case "incomplete_model_result": return "The cloud reading stopped before completing. No fields were accepted. Your photos are kept; you can explicitly retry or enter details manually.";
@@ -109,8 +112,8 @@ final class CloudReader implements AutoCloseable {
             case "provider_request_rejected": return "OpenAI rejected the server request. Check the backend model configuration before retrying. Your photos are kept.";
             case "photo_too_large": case "request_too_large": return "The selected photos are too large. Replace them with closer views of the relevant label sections.";
         }
-        if (status == 401) return "Phone pairing was rejected. Check Cloud connection settings or run server/pair_android.py on the Mac.";
-        if (status == 503) return "The backend API setup is incomplete. Run server/configure.py on the Mac before uploading.";
+        if (status == 401) return "Phone pairing was rejected. Check the pairing token in Cloud connection settings or ask the pilot administrator for a new token.";
+        if (status == 503) return "The reader is starting or its API setup is incomplete. Wait briefly and check the connection again; contact the pilot administrator if it persists. Your photos are kept.";
         if (status == 429) return "The reader is busy. Wait briefly; no automatic retry was sent.";
         return "The backend could not complete this reading. Your photos are kept; check the connection before trying again.";
     }

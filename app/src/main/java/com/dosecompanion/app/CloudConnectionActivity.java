@@ -9,9 +9,10 @@ import android.widget.*;
 public final class CloudConnectionActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL); root.setPadding(24,48,24,24); root.setFitsSystemWindows(true); setContentView(root);
         TextView title = new TextView(this); title.setText("Cloud connection"); title.setTextSize(25); root.addView(title);
-        TextView info = new TextView(this); info.setText("Connect to your label-reading backend. Your OpenAI API key stays on the server. Import this connection before capturing photos; leaving the camera clears them."); root.addView(info);
+        TextView info = new TextView(this); info.setText("For independent phone use, enter the hosted HTTPS address and your pilot pairing token. Your OpenAI API key stays on the server. Set this up before capturing photos; leaving the camera clears them. Reminders and history remain available offline."); root.addView(info);
         var settings = getSharedPreferences("cloud_bridge", MODE_PRIVATE);
         EditText address = new EditText(this); address.setHint("HTTPS server address or localhost USB bridge"); address.setSingleLine(true);
         address.setText(settings.getString("endpoint", "http://127.0.0.1:8787")); root.addView(address);

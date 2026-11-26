@@ -55,7 +55,7 @@ public final class CloudScanSession extends AndroidViewModel {
     }
     void checkConnection() {
         if (busy || checking || draft != null) return;
-        checking = true; ready = false; final int job = epoch; changed();
+        checking = true; ready = false; message = "Preparing the label reader… A sleeping service can take about a minute to start. You can capture photos while waiting."; final int job = epoch; changed();
         worker.execute(() -> {
             boolean valid = false; String policy = retention, outcome;
             try (CloudReader connection = new CloudReader(getApplication())) {
@@ -65,7 +65,7 @@ public final class CloudScanSession extends AndroidViewModel {
                 if (policy.length() > 2000) throw new IOException("The backend sent invalid configuration metadata.");
                 valid = config.get("ready").getAsBoolean() && "standard".equals(config.get("retention_policy").getAsString());
                 outcome = valid ? "Cloud reader configured. Photos are sent only after consent and pressing Send."
-                        : "API setup is needed on the backend. Run server/configure.py on the Mac.";
+                        : "API setup is needed on the server. Ask the pilot administrator to check its configuration.";
             } catch (IOException failure) { outcome = failure.getMessage(); }
             catch (RuntimeException failure) { outcome = "The backend returned invalid connection settings. Check its configuration."; }
             finally { reader = null; }

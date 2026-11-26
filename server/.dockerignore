@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!requirements.txt
+!bridge.py
+!hosted.py
+!gunicorn.conf.py

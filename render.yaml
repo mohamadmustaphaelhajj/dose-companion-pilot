@@ -1,0 +1,22 @@
+# Personal pilot only. Secrets must be entered in Render; never place them in Git.
+services:
+  - type: web
+    name: dose-companion-pilot
+    repo: https://github.com/mohamadmustaphaelhajj/dose-companion-pilot
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: feature/independent-phone-use
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    healthCheckPath: /healthz
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        sync: false
+      - key: BRIDGE_TOKEN
+        generateValue: true
+      - key: RETENTION_POLICY
+        value: standard

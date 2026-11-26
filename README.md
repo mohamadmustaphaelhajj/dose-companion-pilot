@@ -2,6 +2,14 @@
 
 A medication journal for Android, with a planned Windows web companion. Designed to help people check what they confirmed taking and when.
 
+## Active workstream: personal pilot
+
+This checkout now targets [`dose-companion-pilot`](https://github.com/mohamadmustaphaelhajj/dose-companion-pilot), the personal pilot. The future public product remains in [`dose-companion`](https://github.com/mohamadmustaphaelhajj/dose-companion). Both repositories contain public source code, not personal medical records or deployment secrets.
+
+Prioritize the pilot until it is ready for the intended user. Public-product hosting, billing and wider distribution are deferred. See [the repository/workstream guide](docs/workstreams.md) for remotes, shared fixes and the planned independent-phone milestone.
+
+The [hosted pilot package](docs/hosted-pilot.md) prepares Render deployment, phone pairing and the external warm-up schedule. Deployment and cable-free acceptance remain pending; this does not replace the working USB bridge until configured and tested.
+
 **Status: development preview with cloud label reading.** Capture two to four separate photos and ask OpenAI to read them together. Review and explicitly confirm every returned field before saving. See [API setup, privacy and testing](docs/cloud-label-reader.md). The medication journal and reminders work locally; ingestion detection and account/history sync are not implemented.
 
 Local-model, stitching and panorama research is preserved on [`feature/label-reader-experiments`](https://github.com/mohamadmustaphaelhajj/dose-companion/tree/feature/label-reader-experiments).
